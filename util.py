@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 
 revision = os.environ.get("REVISION") or "%s" % datetime.now()
 message = os.environ.get('MESSAGE')

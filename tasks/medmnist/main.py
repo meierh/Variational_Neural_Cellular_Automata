@@ -1,4 +1,13 @@
 import os
+import sys
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+
+sys.path.append(grandparent_dir)
+
+import distutils
 
 from torch import nn, t
 from torch.distributions import Bernoulli
@@ -9,7 +18,6 @@ from tasks.medmnist.data import TissueMNISTDataset
 from tasks.medmnist.data import AllDatasets
 from train import train
 
-
 def state_to_dist(state):
     return Bernoulli(logits=state[:, :1, :, :])
 
@@ -19,7 +27,7 @@ if __name__ == "__main__":
         oneSet = dataset("train")
         dataitem = oneSet.__getitem__(0)
         image = dataitem[0]
-        print("image.size:",image.size)
+        print("image.size:", image.size)
     
     z_size = 128
     nca_hid = 128
@@ -52,16 +60,15 @@ if __name__ == "__main__":
     train_data, val_data, test_data = TissueMNISTDataset("train"), TissueMNISTDataset("val"), TissueMNISTDataset("test")
     train_data = ConcatDataset((train_data, val_data))
     
-    print("len(train_data):",len(train_data))
+    print("len(train_data):", len(train_data))
     dataitem = train_data.__getitem__(0)
-    print("type(dataitem[0]):",type(dataitem[0]))
-    print("type(dataitem[1]):",type(dataitem[1]))
+    print("type(dataitem[0]):", type(dataitem[0]))
+    print("type(dataitem[1]):", type(dataitem[1]))
     image = dataitem[0]
-    print("type(image):",type(image))
-    print("image.size:",image.size)
-    raise ValueError("Temp Stop")
+    print("type(image):", type(image))
+    print("image.size:", image.size)
 
     vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_data, test_data, test_data, state_to_dist, batch_size, dmg_size, 1.0, 32, 64)
     vnca.eval_batch()
-    train(vnca, n_updates=100_000, eval_interval=100)
+    train(vnca, n_updates=1_000, eval_interval=100)
     vnca.test(128)
