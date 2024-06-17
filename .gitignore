@@ -11,4 +11,4 @@ __pycache__
 *.log
 *.out
 *.gz
-logs
+logs/
