@@ -3,10 +3,10 @@ from typing import Sequence, Tuple
 
 import numpy as np
 import torch as t
-import torch.optim as optim
 import torch.utils.data
 import tqdm
 from shapeguard import ShapeGuard
+from torch import optim
 from torch.distributions import Normal, Distribution
 from torch.utils.data import DataLoader, Dataset
 from tensorboardX import SummaryWriter
@@ -17,23 +17,17 @@ from modules.model import Model
 from modules.nca import NCA
 from util import get_writers
 
-import torch
-import torchvision.transforms as transforms
-
 # torch.autograd.set_detect_anomaly(True)
+import torchvision.transforms.functional as TF
+import PIL
 
-transform = transforms.Compose([
-    transforms.ToTensor(),
-])
-
+# 自定义 collate_fn 来处理批次数据
 def collate_fn(batch):
-    # batch中的每个元素是一个元组，第一个元素是图像，第二个元素是标签（如果有）
-    images = [transform(item[0]) for item in batch]
+    images = [item[0] for item in batch]
     targets = [item[1] for item in batch]
+    # 确保所有图像都被转换为 Tensor
+    images = [TF.to_tensor(image) if isinstance(image, PIL.Image.Image) else image for image in images]
     return t.stack(images), targets
-
-def binary_x(x, threshold=0.5):
-    return (x > threshold).float()
 
 class VNCA(Model):
     def __init__(self,
@@ -148,7 +142,6 @@ class VNCA(Model):
 
     def forward(self, x, n_samples, loss_fn):
         ShapeGuard.reset()
-        x = binary_x(x)
         x.sg("Bchw")
         x = x.to(self.device)
 
@@ -233,3 +226,28 @@ class VNCA(Model):
 
             # Damage
             state = states[-1]
+            _, original_means = self.to_rgb(state)
+            writer.add_images("dmg/1-pre", original_means, self.batch_idx)
+            dmg = self.damage(state)
+            _, dmg_means = self.to_rgb(dmg)
+            writer.add_images("dmg/2-dmg", dmg_means, self.batch_idx)
+            recovered = self.nca(dmg)
+            _, recovered_means = self.to_rgb(recovered[-1])
+            writer.add_images("dmg/3-post", recovered_means, self.batch_idx)
+
+            plot_growth(recovered, "recovery")
+
+            # Reconstructions
+            recons_samples, recons_means = self.to_rgb(recon_states[-1].detach())
+            writer.add_images("recons/samples", recons_samples, self.batch_idx)
+            writer.add_images("recons/means", recons_means, self.batch_idx)
+
+            # Pool
+            if len(self.pool) > 0:
+                pool_xs, pool_states, pool_losses = zip(*random.sample(self.pool, min(len(self.pool), 64)))
+                pool_states = t.stack(pool_states)  # 64, z, h, w
+                pool_samples, pool_means = self.to_rgb(pool_states)
+                writer.add_images("pool/samples", pool_samples, self.batch_idx)
+                writer.add_images("pool/means", pool_means, self.batch_idx)
+
+        writer.flush()

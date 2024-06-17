@@ -3,3 +3,12 @@ venv
 *.iml
 __pycache__/
 data
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.aux
+*.log
+*.out
+*.gz
+logs

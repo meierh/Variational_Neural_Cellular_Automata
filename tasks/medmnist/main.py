@@ -70,5 +70,5 @@ if __name__ == "__main__":
 
     vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_data, test_data, test_data, state_to_dist, batch_size, dmg_size, 1.0, 32, 64)
     vnca.eval_batch()
-    train(vnca, n_updates=1_000, eval_interval=100)
+    train(vnca, n_updates=100, eval_interval=100)
     vnca.test(128)
