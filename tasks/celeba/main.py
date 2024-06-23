@@ -83,5 +83,5 @@ if __name__ == "__main__":
     vnca.eval_batch()
     #original train(vnca, n_updates=100_000, eval_interval=100)
     #original vnca.test(128)
-    train(vnca, n_updates=20, eval_interval=4)
+    train(vnca, n_updates=8, eval_interval=4)
     vnca.test(1)

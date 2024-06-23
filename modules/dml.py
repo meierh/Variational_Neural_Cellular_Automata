@@ -13,17 +13,30 @@ sys.path.append(grandparent_dir)
 
 
 class DiscretizedMixtureLogitsDistribution(Distribution):
+    arg_constraints = {}
+
     def __init__(self, nr_mix, logits):
         super().__init__()
         self.logits = logits
         self.nr_mix = nr_mix
         self._batch_shape = logits.shape
 
+    #original def log_prob(self, value):
+    #original    return - discretized_mix_logistic_loss(value * 2 - 1, self.logits).unsqueeze(1)  # add channel dim for compatibility with loss functions expecting bchw
     def log_prob(self, value):
-        return - discretized_mix_logistic_loss(value * 2 - 1, self.logits).unsqueeze(1)  # add channel dim for compatibility with loss functions expecting bchw
+            if value.shape[1] == 1: # 1d gray image case
+                return -discretized_mix_logistic_loss_1d(value * 2 - 1, self.logits).unsqueeze(1)  # add channel dim for compatibility with loss functions expecting bchw
+            else:
+                return -discretized_mix_logistic_loss(value * 2 - 1, self.logits).unsqueeze(1)  # add channel dim for compatibility with loss functions expecting bchw
 
+    #original def sample(self):
+    #original     return (sample_from_discretized_mix_logistic(self.logits, self.nr_mix) + 1) / 2
+    
     def sample(self):
-        return (sample_from_discretized_mix_logistic(self.logits, self.nr_mix) + 1) / 2
+        if self.logits.shape[1] == 1: # 1d gray image case
+            return (sample_from_discretized_mix_logistic_1d(self.logits, self.nr_mix) + 1) / 2
+        else:
+            return (sample_from_discretized_mix_logistic(self.logits, self.nr_mix) + 1) / 2
 
     @property
     def mean(self):
@@ -191,7 +204,7 @@ def sample_from_discretized_mix_logistic_1d(l, nr_mix):
     # Pytorch ordering
     l = l.permute(0, 2, 3, 1)
     ls = [int(y) for y in l.size()]
-    xs = ls[:-1] + [1]  # [3]
+    xs = ls[:-1] + [1]  # 1 channel for grayscale
 
     # unpack parameters
     logit_probs = l[:, :, :, :nr_mix]

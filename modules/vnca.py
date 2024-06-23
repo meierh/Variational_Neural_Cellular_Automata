@@ -142,9 +142,6 @@ class VNCA(Model):
 
     def forward(self, x, n_samples, loss_fn):
         ShapeGuard.reset()
-        #modify 
-        print(x.shape)
-
         x.sg("Bchw")
         x = x.to(self.device)
 
@@ -285,7 +282,6 @@ class VNCA(Model):
                     pool_samples = pool_samples.expand(-1, 3, -1, -1)  # 同样转换样本
                 if pool_means.shape[1] == 1:
                     pool_means = pool_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
-                    
                 writer.add_images("pool/samples", pool_samples, self.batch_idx)
                 writer.add_images("pool/means", pool_means, self.batch_idx)
 
