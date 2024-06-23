@@ -11,6 +11,6 @@ __pycache__
 *.log
 *.out
 *.gz
-logs/
 *.pth
+logs/
 results/
