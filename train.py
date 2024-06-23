@@ -3,7 +3,8 @@ import tqdm
 from modules.model import Model
 
 
-def train(model: Model, n_updates=int(1e6), eval_interval=1000):
+#original def train(model: Model, n_updates=int(1e6), eval_interval=1000):
+def train(model: Model, n_updates=int(100), eval_interval=10):
     best = float("inf")
     for i in tqdm.tqdm(range(n_updates)):
         model.train_batch()

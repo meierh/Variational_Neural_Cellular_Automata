@@ -1,4 +1,10 @@
 import os
+# modify
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+sys.path.append(grandparent_dir)
 
 from torch import nn
 from torch.nn import DataParallel
@@ -75,5 +81,7 @@ if __name__ == "__main__":
 
     vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_data, val_data, test_data, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
     vnca.eval_batch()
-    train(vnca, n_updates=100_000, eval_interval=100)
-    vnca.test(128)
+    #original train(vnca, n_updates=100_000, eval_interval=100)
+    train(vnca, n_updates=100, eval_interval=10)
+    #original vnca.test(128)
+    vnca.test(8)

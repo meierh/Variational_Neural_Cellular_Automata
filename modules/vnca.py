@@ -1,15 +1,21 @@
 import random
 from typing import Sequence, Tuple
+# modify
+import sys, os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+sys.path.append(grandparent_dir)
 
 import numpy as np
 import torch as t
-import torch.optim as optim
 import torch.utils.data
 import tqdm
 from shapeguard import ShapeGuard
+from torch import optim
 from torch.distributions import Normal, Distribution
 from torch.utils.data import DataLoader, Dataset
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 from modules.iterable_dataset_wrapper import IterableWrapper
 from modules.loss import elbo, iwae
@@ -17,23 +23,8 @@ from modules.model import Model
 from modules.nca import NCA
 from util import get_writers
 
-import torch
-import torchvision.transforms as transforms
 
 # torch.autograd.set_detect_anomaly(True)
-
-transform = transforms.Compose([
-    transforms.ToTensor(),
-])
-
-def collate_fn(batch):
-    # batch中的每个元素是一个元组，第一个元素是图像，第二个元素是标签（如果有）
-    images = [transform(item[0]) for item in batch]
-    targets = [item[1] for item in batch]
-    return t.stack(images), targets
-
-def binary_x(x, threshold=0.5):
-    return (x > threshold).float()
 
 class VNCA(Model):
     def __init__(self,
@@ -71,10 +62,9 @@ class VNCA(Model):
         self.p_z = Normal(t.zeros(self.z_size, device=self.device), t.ones(self.z_size, device=self.device))
 
         self.test_set = test_data
-        self.train_loader = iter(DataLoader(IterableWrapper(train_data), batch_size=batch_size, pin_memory=True, collate_fn=collate_fn))
-        self.val_loader = iter(DataLoader(IterableWrapper(val_data), batch_size=batch_size, pin_memory=True, collate_fn=collate_fn))
-        self.train_writer = SummaryWriter(log_dir='logs/train')
-        self.test_writer = SummaryWriter(log_dir='logs/test')
+        self.train_loader = iter(DataLoader(IterableWrapper(train_data), batch_size=batch_size, pin_memory=True))
+        self.val_loader = iter(DataLoader(IterableWrapper(val_data), batch_size=batch_size, pin_memory=True))
+        self.train_writer, self.test_writer = get_writers("vnca")
 
         print(self)
         total = sum(p.numel() for p in self.parameters())
@@ -117,6 +107,10 @@ class VNCA(Model):
         with t.no_grad():
             total_loss = 0.0
             for x, y in tqdm.tqdm(self.test_set):
+                #modify
+                if len(x.shape) == 3:  # 检查, x是否是 3 维
+                    x = x.unsqueeze(0)  # 调整, 使 x 成为 4 维
+
                 loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, n_iw_samples, iwae)
                 total_loss += loss.mean().item()
 
@@ -148,7 +142,9 @@ class VNCA(Model):
 
     def forward(self, x, n_samples, loss_fn):
         ShapeGuard.reset()
-        x = binary_x(x)
+        #modify 
+        print(x.shape)
+
         x.sg("Bchw")
         x = x.to(self.device)
 
@@ -233,3 +229,28 @@ class VNCA(Model):
 
             # Damage
             state = states[-1]
+            _, original_means = self.to_rgb(state)
+            writer.add_images("dmg/1-pre", original_means, self.batch_idx)
+            dmg = self.damage(state)
+            _, dmg_means = self.to_rgb(dmg)
+            writer.add_images("dmg/2-dmg", dmg_means, self.batch_idx)
+            recovered = self.nca(dmg)
+            _, recovered_means = self.to_rgb(recovered[-1])
+            writer.add_images("dmg/3-post", recovered_means, self.batch_idx)
+
+            plot_growth(recovered, "recovery")
+
+            # Reconstructions
+            recons_samples, recons_means = self.to_rgb(recon_states[-1].detach())
+            writer.add_images("recons/samples", recons_samples, self.batch_idx)
+            writer.add_images("recons/means", recons_means, self.batch_idx)
+
+            # Pool
+            if len(self.pool) > 0:
+                pool_xs, pool_states, pool_losses = zip(*random.sample(self.pool, min(len(self.pool), 64)))
+                pool_states = t.stack(pool_states)  # 64, z, h, w
+                pool_samples, pool_means = self.to_rgb(pool_states)
+                writer.add_images("pool/samples", pool_samples, self.batch_idx)
+                writer.add_images("pool/means", pool_means, self.batch_idx)
+
+        writer.flush()

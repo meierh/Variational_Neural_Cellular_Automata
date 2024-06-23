@@ -4,6 +4,13 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Distribution
 
+# modify
+import sys, os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+sys.path.append(grandparent_dir)
+
 
 class DiscretizedMixtureLogitsDistribution(Distribution):
     def __init__(self, nr_mix, logits):
@@ -23,7 +30,7 @@ class DiscretizedMixtureLogitsDistribution(Distribution):
         """
         Returns the mean of the distribution.
         """
-        return t.stack([self.sample() for _ in range(100)]).mean(dim=0)
+        return torch.stack([self.sample() for _ in range(100)]).mean(dim=0)
 
 
 class DiscretizedMixtureLogits():

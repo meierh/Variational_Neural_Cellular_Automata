@@ -1,5 +1,12 @@
 import os
 
+# modify
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+sys.path.append(grandparent_dir)
+
 from torch import nn, t
 from torch.distributions import Bernoulli
 from torch.utils.data import ConcatDataset
@@ -7,6 +14,8 @@ from torch.utils.data import ConcatDataset
 from modules.vnca import VNCA
 from tasks.mnist.data import StaticMNIST
 from train import train
+
+
 
 
 def state_to_dist(state):
