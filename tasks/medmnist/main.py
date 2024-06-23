@@ -8,19 +8,26 @@ sys.path.append(grandparent_dir)
 from torch import nn
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from data import PathMNISTDataset, DermaMNISTDataset, RetinaMNISTDataset, BloodMNISTDataset
+from data import PathMNISTDataset, DermaMNISTDataset, RetinaMNISTDataset, BloodMNISTDataset, BreastMNISTDataset
 from modules.dml import DiscretizedMixtureLogitsDistribution
 from modules.residual import Residual
 from modules.vnca import VNCA
 from train import train
+import torch
 
-selected_dataset = "pathmnist"
+selected_dataset = "breastmnist"
+pic_channels = 1
+n_updates_s = 20
+eval_interval_s = 5
 
 """
+    RGB images are used for the MedMNIST following datasets, so n_channels = 3
     "pathmnist": PathMNISTDataset,
     "dermamnist": DermaMNISTDataset,
     "retinamnist": RetinaMNISTDataset,
     "bloodmnist": BloodMNISTDataset
+    Gray images are used for the MedMNIST following datasets, so n_channels = 1
+    "breastmnist": BreastMNISTDataset,
 """
 
 if __name__ == "__main__":
@@ -36,7 +43,7 @@ if __name__ == "__main__":
     pad = filter_size // 2
     encoder_hid = 32
     h = w = 32
-    n_channels = 3  # MedMNIST datasets are in color (3 channels)
+    n_channels = pic_channels  # MedMNIST datasets are in color (3 channels)
 
     def state_to_dist(state):
         return DiscretizedMixtureLogitsDistribution(n_mixtures, state[:, :n_mixtures * 10, :, :])
@@ -83,7 +90,8 @@ if __name__ == "__main__":
         "pathmnist": PathMNISTDataset,
         "dermamnist": DermaMNISTDataset,
         "retinamnist": RetinaMNISTDataset,
-        "bloodmnist": BloodMNISTDataset
+        "bloodmnist": BloodMNISTDataset,
+        "breastmnist": BreastMNISTDataset,
     }
     dataset_flag = selected_dataset  # Change this to your desired dataset
     DatasetClass = dataset_classes[dataset_flag]
@@ -96,7 +104,28 @@ if __name__ == "__main__":
     val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
-    vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_loader.dataset, val_loader.dataset, test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
+    vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_loader.dataset, val_loader.dataset, 
+                test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
+    
+    # Define the results directory and create it if it doesn't exist
+    results_dir = os.path.join(grandparent_dir, 'results')
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Evaluate before training (optional)
     vnca.eval_batch()
-    train(vnca, n_updates=10_000, eval_interval=100)
+
+    # Train the model
+    n_updates = n_updates_s
+    eval_interval = eval_interval_s
+    train(vnca, n_updates, eval_interval)
+
+    # Define the path to save the model
+    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}.pth')
+
+    # Save model weights after training
+    torch.save(vnca.state_dict(), save_path)
+    print(f"Model weights saved to {save_path}")
+
+    # Test the model
     vnca.test(128)
+    print("Inference completed.")

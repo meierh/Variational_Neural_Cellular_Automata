@@ -151,11 +151,11 @@ def discretized_mix_logistic_loss_1d(x, l):
     ls = [int(y) for y in l.size()]
 
     # unpacking the params of the mixture of logistics
-    nr_mix = int(ls[-1] / 3)  # 2 because we only have mean and scale for grayscale 
+    nr_mix = int(ls[-1] / 3) 
     #modify
-    print(f"ls[-1]: {ls[-1]}, nr_mix: {nr_mix}")
-    if nr_mix * 2 != ls[-1]:
-        raise ValueError(f"Incorrect nr_mix value. Expected: {ls[-1]} divisible by 2. Got nr_mix: {nr_mix}")
+    #print(f"ls[-1]: {ls[-1]}, nr_mix: {nr_mix}")
+    #if nr_mix * 2 != ls[-1]:
+    #    raise ValueError(f"Incorrect nr_mix value. Expected: {ls[-1]} divisible by 2. Got nr_mix: {nr_mix}")
     
     logit_probs = l[:, :, :, :nr_mix]
     #modify
@@ -205,7 +205,7 @@ def sample_from_discretized_mix_logistic_1d(l, nr_mix):
     # Pytorch ordering
     l = l.permute(0, 2, 3, 1)
     ls = [int(y) for y in l.size()]
-    xs = ls[:-1] + [1]  # [3]
+    xs = ls[:-1] + [1]
 
     # unpack parameters
     logit_probs = l[:, :, :, :nr_mix]
