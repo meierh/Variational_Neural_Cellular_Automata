@@ -14,6 +14,15 @@ from modules.residual import Residual
 from modules.vnca import VNCA
 from train import train
 
+selected_dataset = "pathmnist"
+
+"""
+    "pathmnist": PathMNISTDataset,
+    "dermamnist": DermaMNISTDataset,
+    "retinamnist": RetinaMNISTDataset,
+    "bloodmnist": BloodMNISTDataset
+"""
+
 if __name__ == "__main__":
     z_size = 256
     nca_hid = 128
@@ -76,7 +85,7 @@ if __name__ == "__main__":
         "retinamnist": RetinaMNISTDataset,
         "bloodmnist": BloodMNISTDataset
     }
-    dataset_flag = "pathmnist"  # Change this to your desired dataset
+    dataset_flag = selected_dataset  # Change this to your desired dataset
     DatasetClass = dataset_classes[dataset_flag]
 
     train_dataset = DatasetClass(splitSet='train')
@@ -89,5 +98,5 @@ if __name__ == "__main__":
 
     vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_loader.dataset, val_loader.dataset, test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
     vnca.eval_batch()
-    train(vnca, n_updates=8, eval_interval=4)
-    vnca.test(1)
+    train(vnca, n_updates=10_000, eval_interval=100)
+    vnca.test(128)
