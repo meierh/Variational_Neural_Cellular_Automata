@@ -1,0 +1,61 @@
+%%
+% !TeX program = lualatex
+%%
+
+\documentclass[
+	ngerman,
+	accentcolor=9c,% Farbe für Hervorhebungen auf Basis der Deklarationen in den
+	type=intern,
+	marginpar=false
+	]{tudapub}
+
+\usepackage[english, main=english]{babel}
+\usepackage[autostyle]{csquotes}
+
+%Formatierungen für Beispiele in diesem Dokument. Im Allgemeinen nicht notwendig!
+\let\file\texttt
+\let\code\texttt
+\let\pck\textsf
+\let\cls\textsf
+
+\begin{document}
+
+
+\title{DGM Project Report 1}
+\author{Helge Meier, Xiaoyan Xue,  Yubao Ma, Zhiqian Yu}
+\date{\today}
+
+\maketitle
+
+\section{What we have worked on this week}
+\begin{itemize}
+    \item Each of us read and discussed about the paper and assigned different part of jobs for each person. Also, accroding to the feasible of GPU, and to accelerate the work. Each of us tried different approaches to make the code up to date and to run. Also we gathered some other works done before by some other people. 
+    \item Investigation of methods in literature. First we figured out how the methods work in the paper and then find the correspoding code in the repo and try to understand the implementation of the methods and the connection of codes.
+    \item Integrated of MedMnist Datasets into code, we used the python package medmnist to get the data for training. And then implement the corresponding code in the main.py to make it get the dataset and seperate it into trainset and testset. 
+    \item Debugging of code problems, we did some modification in the main.py of the medmnist to avoid problems.
+    \item Till now it can train on the MedMNIST, though meet problem on evaluation due to different logic used for evaluation. 
+\end{itemize}
+
+\section{Results, findings and problems}
+\begin{itemize}
+    \item Model architecture is quite traditional although being motivated as a vast change
+    \item Packages used in the requirements file are out of date, and has compatibility conflicts for nowadays packages.
+    \item Tensorboard used in the repo for visulisation can't be used for the required version of other packages.
+    \item Now we try to change "pytorch tensorboard" to "TensorboardX"
+    \item The repo is well organized and the whole idea of it is modulized. That every different methods has it's own py file and maintain a high isolation but still maintain coherence, as the each dataset will use different method to process data and prepare train and test data. But they all use the same train and util file to avoid redudance. 
+\end{itemize}
+
+\section{Future work}
+\begin{enumerate}
+    \item Get model to run the whole process of train and evaluation of different datasets
+    \item Follow the task distributions:
+    \begin{enumerate}
+        \item The method should be able to train by 25.06.2024 (1 week).
+        \item Training results should be available till 02.07.2024(1 week).
+        \item Experiments with parameters till 09.07.2024(1 weeks).
+    \end{enumerate}
+\end{enumerate}
+
+
+
+\end{document}
