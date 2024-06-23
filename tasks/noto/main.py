@@ -1,5 +1,4 @@
 import os
-# modify
 import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -7,13 +6,14 @@ grandparent_dir = os.path.dirname(parent_dir)
 sys.path.append(grandparent_dir)
 
 from torch import nn
-from torch.nn import DataParallel
-from torchvision import transforms, datasets
+from torchvision import transforms
+from torch.utils.data import DataLoader
 
 from modules.dml import DiscretizedMixtureLogitsDistribution
 from modules.residual import Residual
 from modules.vnca import VNCA
 from train import train
+from data import NotoEmoji
 
 if __name__ == "__main__":
     z_size = 256
@@ -30,10 +30,8 @@ if __name__ == "__main__":
     h = w = 32
     n_channels = 3
 
-
     def state_to_dist(state):
         return DiscretizedMixtureLogitsDistribution(n_mixtures, state[:, :n_mixtures * 10, :, :])
-
 
     encoder = nn.Sequential(
         nn.Conv2d(n_channels, encoder_hid * 2 ** 0, filter_size, padding=pad), nn.ELU(),  # (bs, 32, h, w)
@@ -72,16 +70,14 @@ if __name__ == "__main__":
     update_net[-1].weight.data.fill_(0.0)
     update_net[-1].bias.data.fill_(0.0)
 
-    # encoder = DataParallel(encoder)
-    # update_net = DataParallel(update_net)
-
     data_dir = os.environ.get('DATA_DIR') or "data"
     tp = transforms.Compose([transforms.Resize((h, w)), transforms.ToTensor()])
-    train_data, val_data, test_data = [datasets.CelebA(data_dir, split=split, download=True, transform=tp) for split in ["train", "valid", "test"]]
 
-    vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_data, val_data, test_data, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
+    # 加载 NotoEmoji 数据集
+    noto_data = NotoEmoji(data_dir, transform=tp)
+    train_data, val_data = noto_data.train_val_split()
+
+    vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_data, val_data, val_data, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
     vnca.eval_batch()
-    #original train(vnca, n_updates=100_000, eval_interval=100)
-    #original vnca.test(128)
     train(vnca, n_updates=20, eval_interval=4)
     vnca.test(1)

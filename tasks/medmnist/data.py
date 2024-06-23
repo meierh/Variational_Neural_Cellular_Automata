@@ -18,15 +18,26 @@ from medmnist import OrganAMNIST
 from medmnist import OrganCMNIST
 from medmnist import OrganSMNIST
 
+#modify
+from torchvision import transforms
+
 class PathMNISTDataset(Dataset):
     splits = {"train","val","test"}
 
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  PathMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -37,9 +48,17 @@ class ChestMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  ChestMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -50,9 +69,17 @@ class DermaMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  DermaMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -63,9 +90,17 @@ class OCTMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  OCTMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -76,9 +111,17 @@ class PneumoniaMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  PneumoniaMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -89,9 +132,17 @@ class RetinaMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  RetinaMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -102,9 +153,17 @@ class BreastMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  BreastMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -115,9 +174,17 @@ class BloodMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  BloodMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -128,9 +195,17 @@ class TissueMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  TissueMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -141,9 +216,17 @@ class OrganAMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  OrganAMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -154,9 +237,17 @@ class OrganCMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  OrganCMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()
@@ -167,9 +258,17 @@ class OrganSMNISTDataset(Dataset):
     def __init__(self, splitSet):
         assert splitSet in self.splits
         self.thisSet =  OrganSMNIST(split=splitSet, download=True)
+        #modify
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: (x > 0.5).float())  # 添加这一步，将数据转换为二值
+        ])
 
     def __getitem__(self, index):
-        return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        #original return self.thisSet.__getitem__(index)[0], 0  # placeholder label
+        image, label = self.thisSet.__getitem__(index)
+        image = self.transform(image)  # 转换为张量
+        return image, label  # 返回标签
 
     def __len__(self):
         return self.thisSet.__len__()

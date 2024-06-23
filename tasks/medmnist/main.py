@@ -18,7 +18,9 @@ from tasks.medmnist.data import AllDatasets
 from train import train
 
 def state_to_dist(state):
-    return Bernoulli(logits=state[:, :1, :, :])
+    #original return Bernoulli(logits=state[:, :1, :, :])
+    binary_state = (state > 0.5).float()  # 将浮点数转换为二值
+    return Bernoulli(logits=binary_state)
 
 
 if __name__ == "__main__":

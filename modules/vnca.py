@@ -209,6 +209,12 @@ class VNCA(Model):
             samples = self.p_z.sample((8,)).view(8, -1, 1, 1).expand(8, -1, self.h, self.w).to(self.device)
             states = self.decode(samples)
             samples, samples_means = self.to_rgb(states[-1])
+            #modify
+            if samples.shape[1] == 1:  # 如果是单通道图像
+                samples = samples.expand(-1, 3, -1, -1)  # 将其转换为三通道图像
+            if samples_means.shape[1] == 1:
+                samples_means = samples_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+
             writer.add_images("samples/samples", samples, self.batch_idx)
             writer.add_images("samples/means", samples_means, self.batch_idx)
 
@@ -222,6 +228,12 @@ class VNCA(Model):
 
                 growth_samples = t.cat(growth_samples, dim=0).cpu().detach().numpy()  # (n_states, 3, h, w)
                 growth_means = t.cat(growth_means, dim=0).cpu().detach().numpy()  # (n_states, 3, h, w)
+                #modify
+                if growth_samples.shape[1] == 1:  # 如果是单通道图像
+                    growth_samples = np.repeat(growth_samples, 3, axis=1)  # 将其转换为三通道图像
+                if growth_means.shape[1] == 1:
+                    growth_means = np.repeat(growth_means, 3, axis=1)  # 同样转换样本均值
+
                 writer.add_images(tag + "/samples", growth_samples, self.batch_idx)
                 writer.add_images(tag + "/means", growth_means, self.batch_idx)
 
@@ -230,18 +242,36 @@ class VNCA(Model):
             # Damage
             state = states[-1]
             _, original_means = self.to_rgb(state)
+            #modify
+            if original_means.shape[1] == 1:  # 如果是单通道图像
+                original_means = original_means.expand(-1, 3, -1, -1)  # 将其转换为三通道图像
+
             writer.add_images("dmg/1-pre", original_means, self.batch_idx)
             dmg = self.damage(state)
             _, dmg_means = self.to_rgb(dmg)
+            #modify
+            if dmg_means.shape[1] == 1:  # 如果是单通道图像
+                dmg_means = dmg_means.expand(-1, 3, -1, -1) # 同样转换样本均值
+
             writer.add_images("dmg/2-dmg", dmg_means, self.batch_idx)
             recovered = self.nca(dmg)
             _, recovered_means = self.to_rgb(recovered[-1])
+            #modify
+            if recovered_means.shape[1] == 1:
+                recovered_means = recovered_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+
             writer.add_images("dmg/3-post", recovered_means, self.batch_idx)
 
             plot_growth(recovered, "recovery")
 
             # Reconstructions
             recons_samples, recons_means = self.to_rgb(recon_states[-1].detach())
+            #modify
+            if recons_samples.shape[1] == 1:
+                recons_samples = recons_samples.expand(-1, 3, -1, -1)  # 同样转换样本
+            if recons_means.shape[1] == 1:
+                recons_means = recons_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+
             writer.add_images("recons/samples", recons_samples, self.batch_idx)
             writer.add_images("recons/means", recons_means, self.batch_idx)
 
@@ -250,6 +280,12 @@ class VNCA(Model):
                 pool_xs, pool_states, pool_losses = zip(*random.sample(self.pool, min(len(self.pool), 64)))
                 pool_states = t.stack(pool_states)  # 64, z, h, w
                 pool_samples, pool_means = self.to_rgb(pool_states)
+                #modify
+                if pool_samples.shape[1] == 1:
+                    pool_samples = pool_samples.expand(-1, 3, -1, -1)  # 同样转换样本
+                if pool_means.shape[1] == 1:
+                    pool_means = pool_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+                    
                 writer.add_images("pool/samples", pool_samples, self.batch_idx)
                 writer.add_images("pool/means", pool_means, self.batch_idx)
 
