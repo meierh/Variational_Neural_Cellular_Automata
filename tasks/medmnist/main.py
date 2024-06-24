@@ -15,10 +15,11 @@ from modules.vnca import VNCA
 from train import train
 import torch
 
-selected_dataset = "breastmnist"
-pic_channels = 1
+selected_dataset = "pathmnist"
+pic_channels = 3
 n_updates_s = 20
 eval_interval_s = 5
+num_test = 64
 
 if __name__ == "__main__":
     z_size = 256
@@ -127,7 +128,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        vnca.test(128)
+        vnca.test(num_test)
         print("Inference completed.")
     except Exception as e:
         print(f"Error during testing: {e}")
