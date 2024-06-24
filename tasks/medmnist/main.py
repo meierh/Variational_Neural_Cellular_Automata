@@ -5,6 +5,7 @@ parent_dir = os.path.dirname(current_dir)
 grandparent_dir = os.path.dirname(parent_dir)
 sys.path.append(grandparent_dir)
 
+import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -13,13 +14,28 @@ from modules.dml import DiscretizedMixtureLogitsDistribution
 from modules.residual import Residual
 from modules.vnca import VNCA
 from train import train
-import torch
 
 selected_dataset = "pathmnist"
 pic_channels = 3
-n_updates_s = 20
-eval_interval_s = 5
-num_test = 64
+n_updates_s = 50_000
+eval_interval_s = 100
+num_test = 40
+
+def save_checkpoint(state, is_best, checkpoint_dir, filename_prefix):
+    filename = f"{filename_prefix}_vnca_model_{selected_dataset}_{n_updates_s}_{eval_interval_s}.pth"
+    filepath = os.path.join(checkpoint_dir, filename)
+    torch.save(state, filepath)
+    if is_best:
+        best_filepath = os.path.join(checkpoint_dir, f"best_{filename}")
+        torch.save(state, best_filepath)
+
+def load_checkpoint(checkpoint_dir, filename_prefix):
+    filename = f"{filename_prefix}_vnca_model_{selected_dataset}_{n_updates_s}_{eval_interval_s}.pth"
+    filepath = os.path.join(checkpoint_dir, filename)
+    if os.path.exists(filepath):
+        return torch.load(filepath)
+    else:
+        return None
 
 if __name__ == "__main__":
     z_size = 256
@@ -105,6 +121,16 @@ if __name__ == "__main__":
     results_dir = os.path.join(grandparent_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
 
+    checkpoint = load_checkpoint(results_dir, 'checkpoint')
+    if checkpoint:
+        vnca.load_state_dict(checkpoint['state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        best_loss = checkpoint['best_loss']
+        print(f"Resuming from epoch {start_epoch}, best loss {best_loss:.4f}")
+    else:
+        start_epoch = 0
+        best_loss = float('inf')
+
     try:
         vnca.eval_batch()
     except Exception as e:
@@ -113,7 +139,16 @@ if __name__ == "__main__":
     n_updates = n_updates_s
     eval_interval = eval_interval_s
     try:
-        train(vnca, n_updates, eval_interval)
+        for epoch in range(start_epoch, n_updates):
+            train(vnca, epoch, eval_interval)
+            is_best = vnca.best_loss < best_loss
+            best_loss = min(vnca.best_loss, best_loss)
+            if epoch % 50 == 0:  # Save checkpoint every 50 epochs
+                save_checkpoint({
+                    'epoch': epoch,
+                    'state_dict': vnca.state_dict(),
+                    'best_loss': best_loss
+                }, is_best, results_dir, f'checkpoint_epoch_{epoch}')
     except Exception as e:
         print(f"Error during training: {e}")
         sys.exit(1)

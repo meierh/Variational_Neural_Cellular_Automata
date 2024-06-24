@@ -45,6 +45,7 @@ class VNCA(Model):
                  max_steps: int
                  ):
         super(Model, self).__init__()
+        self.best_loss = float('inf')  
         self.h = h
         self.w = w
         self.n_channels = n_channels
