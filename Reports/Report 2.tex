@@ -1,0 +1,62 @@
+%%
+% !TeX program = lualatex
+%%
+
+\documentclass[
+	ngerman,
+	accentcolor=9c,% Farbe für Hervorhebungen auf Basis der Deklarationen in den
+	type=intern,
+	marginpar=false
+	]{tudapub}
+
+\usepackage[english, main=english]{babel}
+\usepackage[autostyle]{csquotes}
+
+%Formatierungen für Beispiele in diesem Dokument. Im Allgemeinen nicht notwendig!
+\let\file\texttt
+\let\code\texttt
+\let\pck\textsf
+\let\cls\textsf
+
+\begin{document}
+
+
+\title{DGM Project Report 2}
+\author{Helge Meier, Xiaoyan Xue,  Yubao Ma, Zhiqian Yu}
+\date{\today}
+
+\maketitle
+
+\section{What we have worked on this week}
+\begin{itemize}
+    \item We have analyzed the file contents of MedMNIST, including the datasets breastmnist, bloodmnist, etc. Each dataset has 'train', 'val' and 'test', and the image formats of different datasets are also different, including grayscale images and RGB images. However, most of them are RGB images, so we focus more on 3-channel datasets.
+    \item For the training part, we modified the main, model, and train parts of the original function and added a data.py file to load the MedMNIST data and compute its tensors as the features of the input neural network.
+    \item  During the training process, we used the method of small batch training, which not only helps to save memory space, but also allows the best model to be updated at any time. We set 3 points to save the existing model,
+    1, checkpoint: For example, save a checkpoint every 1000 epochs of training to prevent the program from losing progress due to unexpected interruptions.
+    2, latest: Ensure that there is always a latest state to restore, it always saves the most recent training state.
+    3, best: In order to ensure that the final model is the best performing model on the validation set, it is only updated when the performance on the validation set reaches a new high.
+    Through the above methods, we can get the instant model and the best model so far.
+    \item During training, we use classification training methods, such as training grayscale images and RGB images separately, to ensure that the input size of the neural network is uniform each time.
+\end{itemize}
+
+\section{Results, findings and problems}
+\begin{itemize}
+    \item Training for RGB images works fine, but it still doesn't work for grayscale images.
+    Due to the different number of input channels, we cannot build a neural network with a unified structure to be compatible with both sizes of input. A possible solution is to unify the input size, such as converting a single-channel to a three-channel, but this will increase the load on the system memory.
+    \item Unfortunately we cannot train all the data together because we occasionally run out of memory. The solution is to train in batches. We have two GPUs, NVIDIA 4090 with power 400W and 4060 ti with 125W, and computational load of 0.4s/batch and 1.5s/batch respectively. For the entire training, it takes 5~6hours/50,000epochs and 25h/50,000epochs respectively. It can be seen that the time cost is huge, so this is also a very tricky problem.
+\end{itemize}
+
+\section{Future work}
+\begin{enumerate}
+    \item All data including grayscale images and RGB images can be trained normally.
+    \item Fine-tune the neural network to get the best model.
+    \item Follow the task distributions:
+    \begin{enumerate}
+        \item The grayscale images should be able to be trained by 02.07.2024 (1 week).
+        \item Adjust parameters to optimize the model till 09.07.2024(1 week).
+    \end{enumerate}
+\end{enumerate}
+
+
+
+\end{document}
