@@ -1,11 +1,11 @@
 import os
 import sys
+import datetime
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 grandparent_dir = os.path.dirname(parent_dir)
 sys.path.append(grandparent_dir)
 
-import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -14,28 +14,13 @@ from modules.dml import DiscretizedMixtureLogitsDistribution
 from modules.residual import Residual
 from modules.vnca import VNCA
 from train import train
+import torch
 
 selected_dataset = "pathmnist"
 pic_channels = 3
 n_updates_s = 50_000
-eval_interval_s = 100
-num_test = 40
-
-def save_checkpoint(state, is_best, checkpoint_dir, filename_prefix):
-    filename = f"{filename_prefix}_vnca_model_{selected_dataset}_{n_updates_s}_{eval_interval_s}.pth"
-    filepath = os.path.join(checkpoint_dir, filename)
-    torch.save(state, filepath)
-    if is_best:
-        best_filepath = os.path.join(checkpoint_dir, f"best_{filename}")
-        torch.save(state, best_filepath)
-
-def load_checkpoint(checkpoint_dir, filename_prefix):
-    filename = f"{filename_prefix}_vnca_model_{selected_dataset}_{n_updates_s}_{eval_interval_s}.pth"
-    filepath = os.path.join(checkpoint_dir, filename)
-    if os.path.exists(filepath):
-        return torch.load(filepath)
-    else:
-        return None
+eval_interval_s = 1000
+num_test = 40 # use 
 
 if __name__ == "__main__":
     z_size = 256
@@ -121,34 +106,55 @@ if __name__ == "__main__":
     results_dir = os.path.join(grandparent_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
 
-    checkpoint = load_checkpoint(results_dir, 'checkpoint')
-    if checkpoint:
-        vnca.load_state_dict(checkpoint['state_dict'])
-        start_epoch = checkpoint['epoch'] + 1
-        best_loss = checkpoint['best_loss']
-        print(f"Resuming from epoch {start_epoch}, best loss {best_loss:.4f}")
+    checkpoint_path = os.path.join(results_dir, "checkpoint_pathmnist.pth")
+    latest_path = os.path.join(results_dir, "latest_pathmnist.pth")
+    best_path = os.path.join(results_dir, "best_pathmnist.pth")
+
+    # 加载最近的检查点
+    max_update = -1
+    load_path = None
+
+    # 比较并确定要加载的检查点文件路径
+    if os.path.exists(latest_path):
+        latest_update = vnca.load(latest_path)
+        if latest_update > max_update:
+            max_update = latest_update
+            load_path = latest_path
+
+    if os.path.exists(checkpoint_path):
+        checkpoint_update = vnca.load(checkpoint_path)
+        if checkpoint_update > max_update:
+            max_update = checkpoint_update
+            load_path = checkpoint_path
+
+    if os.path.exists(best_path):
+        best_update = vnca.load(best_path)
+        if best_update > max_update:
+            max_update = best_update
+            load_path = best_path
+
+    # 只加载一次最新的检查点
+    if max_update == -1:
+        print("\n*******************************\nNo checkpoint found, starting from scratch.\n*******************************\n")
+        load_path = checkpoint_path  # 默认路径
     else:
-        start_epoch = 0
-        best_loss = float('inf')
+        print(
+        f"\n*******************************\n"
+        f"Loading checkpoint from {os.path.relpath(load_path)} with {max_update} updates. "
+        f"\nRemaining updates: {n_updates_s - max_update}.\n"
+        f"*******************************\n"
+    )
+        vnca.load(load_path)
 
     try:
         vnca.eval_batch()
     except Exception as e:
-        print(f"Error during initial evaluation: {e}")
+        print(f"\n*******************************\nError during initial evaluation: {e}\n*******************************\n")
 
     n_updates = n_updates_s
     eval_interval = eval_interval_s
     try:
-        for epoch in range(start_epoch, n_updates):
-            train(vnca, epoch, eval_interval)
-            is_best = vnca.best_loss < best_loss
-            best_loss = min(vnca.best_loss, best_loss)
-            if epoch % 50 == 0:  # Save checkpoint every 50 epochs
-                save_checkpoint({
-                    'epoch': epoch,
-                    'state_dict': vnca.state_dict(),
-                    'best_loss': best_loss
-                }, is_best, results_dir, f'checkpoint_epoch_{epoch}')
+        train(vnca, selected_dataset, n_updates, eval_interval, checkpoint_path=load_path, save_dir=results_dir)
     except Exception as e:
         print(f"Error during training: {e}")
         sys.exit(1)
@@ -157,7 +163,7 @@ if __name__ == "__main__":
 
     try:
         torch.save(vnca.state_dict(), save_path)
-        print(f"Model weights saved to {save_path}")
+        print(f"Model weights saved to {os.path.relpath(save_path)}")
     except Exception as e:
         print(f"Error saving model weights: {e}")
         sys.exit(1)
