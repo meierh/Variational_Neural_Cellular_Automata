@@ -106,9 +106,9 @@ if __name__ == "__main__":
     results_dir = os.path.join(grandparent_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
 
-    checkpoint_path = os.path.join(results_dir, "checkpoint_{selected_dataset}.pth")
-    latest_path = os.path.join(results_dir, "latest_{selected_dataset}.pth")
-    best_path = os.path.join(results_dir, "best_{selected_dataset}.pth")
+    checkpoint_path = os.path.join(results_dir, f"checkpoint_{selected_dataset}.pth")
+    latest_path = os.path.join(results_dir, f"latest_{selected_dataset}.pth")
+    best_path = os.path.join(results_dir, f"best_{selected_dataset}.pth")
 
     # load the latest model weights
     max_update = -1
