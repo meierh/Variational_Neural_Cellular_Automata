@@ -13,7 +13,7 @@ def train(model: Model, dataset_name, n_updates, eval_interval, checkpoint_path=
     for i in tqdm.tqdm(range(start_iter, n_updates)):
         model.train_batch()
         
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 250 == 0:
             save_filename = model.save("checkpoint", dataset_name, i + 1, save_dir)
 
         if (i + 1) % eval_interval == 0:

@@ -16,7 +16,7 @@ from modules.vnca import VNCA
 from train import train
 import torch
 
-selected_dataset = "pathmnist"
+selected_dataset = "bloodmnist"
 pic_channels = 3
 n_updates_s = 50_000
 eval_interval_s = 1000
@@ -106,15 +106,15 @@ if __name__ == "__main__":
     results_dir = os.path.join(grandparent_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
 
-    checkpoint_path = os.path.join(results_dir, "checkpoint_pathmnist.pth")
-    latest_path = os.path.join(results_dir, "latest_pathmnist.pth")
-    best_path = os.path.join(results_dir, "best_pathmnist.pth")
+    checkpoint_path = os.path.join(results_dir, "checkpoint_{selected_dataset}.pth")
+    latest_path = os.path.join(results_dir, "latest_{selected_dataset}.pth")
+    best_path = os.path.join(results_dir, "best_{selected_dataset}.pth")
 
-    # 加载最近的检查点
+    # load the latest model weights
     max_update = -1
     load_path = None
 
-    # 比较并确定要加载的检查点文件路径
+    # compare the update number of the three files
     if os.path.exists(latest_path):
         latest_update = vnca.load(latest_path)
         if latest_update > max_update:
@@ -133,10 +133,10 @@ if __name__ == "__main__":
             max_update = best_update
             load_path = best_path
 
-    # 只加载一次最新的检查点
+    # only load the latest model weights
     if max_update == -1:
         print("\n*******************************\nNo checkpoint found, starting from scratch.\n*******************************\n")
-        load_path = checkpoint_path  # 默认路径
+        load_path = checkpoint_path  # default path for saving the model weights
     else:
         print(
         f"\n*******************************\n"
