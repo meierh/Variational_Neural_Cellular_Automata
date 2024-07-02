@@ -17,7 +17,7 @@ from modules.vnca import VNCA
 from train import train
 import torch
 
-selected_dataset = "pathmnist"
+selected_dataset = "dermamnist" # choose from "pathmnist", "dermamnist", "retinamnist", "bloodmnist", "breastmnist
 pic_channels = 3
 n_updates_s = 50_000
 eval_interval_s = 1000
@@ -25,9 +25,13 @@ num_test = 40 # use
 # Choose the loss function from the possible loss functions above
 loss_fn_t = mse_loss # modified for different losses, originally elbo
 loss_fn_e = iwae # modified for different losses, originally iwae
-notification = "test_1_train_loss_mse_loss_eval_loss_iwae" # put by the end of the pth file name
+loss_sel = "test_1_train_loss_mse_loss_eval_loss_iwae" # put by the end of the pth file name
 # test resuts train use mse_loss and eval use iwae
 # 
+
+# Choose the filter size
+filter_size = 5  # modified for different filters
+pad = filter_size // 2  # modified for different filters
 
 if __name__ == "__main__":
     z_size = 256
@@ -166,7 +170,7 @@ if __name__ == "__main__":
         print(f"Error during training: {e}")
         sys.exit(1)
 
-    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}_{notification}.pth')
+    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}_{loss_sel}.pth')
 
     try:
         torch.save(vnca.state_dict(), save_path)
