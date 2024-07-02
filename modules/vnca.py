@@ -44,7 +44,8 @@ class VNCA(Model):
                  min_steps: int,
                  max_steps: int,
                  loss_fn_t,
-                 loss_fn_e  # modified for different losses
+                 loss_fn_e,
+                 lr_s  # modified for different losses
                  ):
 
         super(Model, self).__init__()
@@ -72,7 +73,7 @@ class VNCA(Model):
         # Save the loss function to self
         self.loss_fn_t = loss_fn_t  # modified for different losses
         self.loss_fn_e = loss_fn_e  # modified for different losses
-
+        self.lr_s = lr_s
         #print(self)
         #total = sum(p.numel() for p in self.parameters())
         #for n, p in self.named_parameters():
@@ -80,7 +81,7 @@ class VNCA(Model):
         #print("Total: %d" % total)
 
         self.to(self.device)
-        self.optimizer = optim.Adam(self.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(self.parameters(), lr=lr_s)
         self.batch_idx = 0
 
     def train_batch(self):

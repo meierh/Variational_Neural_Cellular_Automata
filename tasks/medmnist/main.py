@@ -22,16 +22,24 @@ pic_channels = 3
 n_updates_s = 50_000
 eval_interval_s = 1000
 num_test = 40 # use 
+
+# Experiment settings and results
 # Choose the loss function from the possible loss functions above
-loss_fn_t = mse_loss # modified for different losses, originally elbo
+loss_fn_t = elbo # modified for different losses, originally elbo
 loss_fn_e = iwae # modified for different losses, originally iwae
-loss_sel = "test_1_train_loss_mse_loss_eval_loss_iwae" # put by the end of the pth file name
+loss_sel = "elbo_train_iwae_eval" # put by the end of the pth file name
 # test resuts train use mse_loss and eval use iwae
-# 
+# when use mse_loss will after 6 epochs already have non-finite gradient problem
+# when use bce_loss will after 8 epochs already have non-finite gradient problem
+# when use kl_divergence_loss will after 10 epochs already have non-finite gradient problem
 
 # Choose the filter size
-filter_size = 5  # modified for different filters
-pad = filter_size // 2  # modified for different filters
+filter_size_t = 4  # modified for different filters sizes, originally 5
+# test resuts for training with different filter sizes
+
+# chosse learning rate
+lr_s = 1e-4  # modified for different learning rates, originally 1e-4
+# try 1e-5, 1e-6, 1e-7, they cant avoid gradient going to non-finite problem, just delayed it, the lower the lr the longer it takes to reach the non-finite gradient problem
 
 if __name__ == "__main__":
     z_size = 256
@@ -42,7 +50,7 @@ if __name__ == "__main__":
     p_update = 1.0
     min_steps, max_steps = 64, 128
 
-    filter_size = 5
+    filter_size = filter_size_t
     pad = filter_size // 2
     encoder_hid = 32
     h = w = 32
@@ -112,7 +120,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_loader.dataset, val_loader.dataset, 
-                test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps, loss_fn_t, loss_fn_e)  # modified for different losses
+                test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps, loss_fn_t, loss_fn_e, lr_s)  # modified for different losses
 
     results_dir = os.path.join(grandparent_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
@@ -170,7 +178,7 @@ if __name__ == "__main__":
         print(f"Error during training: {e}")
         sys.exit(1)
 
-    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}_{loss_sel}.pth')
+    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}_{loss_sel}_filter_size_{filter_size_t}_lr_{lr_s}.pth')
 
     try:
         torch.save(vnca.state_dict(), save_path)
