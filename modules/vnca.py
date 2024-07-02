@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 
 from modules.iterable_dataset_wrapper import IterableWrapper
-from modules.loss import elbo, iwae
+from modules.loss import elbo, iwae # losses used for test as iwae
 from modules.model import Model
 from modules.nca import NCA
 from util import get_writers
@@ -42,8 +42,11 @@ class VNCA(Model):
                  dmg_size: int,
                  p_update: float,
                  min_steps: int,
-                 max_steps: int
+                 max_steps: int,
+                 loss_fn_t,
+                 loss_fn_e  # modified for different losses
                  ):
+
         super(Model, self).__init__()
         self.best_loss = float('inf')  
         self.h = h
@@ -66,6 +69,9 @@ class VNCA(Model):
         self.train_loader = iter(DataLoader(IterableWrapper(train_data), batch_size=batch_size, pin_memory=True))
         self.val_loader = iter(DataLoader(IterableWrapper(val_data), batch_size=batch_size, pin_memory=True))
         self.train_writer, self.test_writer = get_writers("vnca")
+        # Save the loss function to self
+        self.loss_fn_t = loss_fn_t  # modified for different losses
+        self.loss_fn_e = loss_fn_e  # modified for different losses
 
         #print(self)
         #total = sum(p.numel() for p in self.parameters())
@@ -82,7 +88,7 @@ class VNCA(Model):
 
         self.optimizer.zero_grad()
         x, y = next(self.train_loader)
-        loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, elbo)
+        loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, self.loss_fn_t)  # modified for different losses
         loss.mean().backward()
 
         t.nn.utils.clip_grad_norm_(self.parameters(), 1.0, error_if_nonfinite=True)
@@ -99,7 +105,7 @@ class VNCA(Model):
         self.train(False)
         with t.no_grad():
             x, y = next(self.val_loader)
-            loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, iwae)
+            loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, self.loss_fn_e)  # modified for different losses
             self.report(self.test_writer, states, loss, recon_loss, kl_loss)
         return loss.mean().item()
 

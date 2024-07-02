@@ -12,15 +12,22 @@ from torchvision import transforms
 from data import PathMNISTDataset, DermaMNISTDataset, RetinaMNISTDataset, BloodMNISTDataset, BreastMNISTDataset
 from modules.dml import DiscretizedMixtureLogitsDistribution
 from modules.residual import Residual
+from modules.loss import elbo, iwae, mse_loss, bce_loss, kl_divergence_loss, hinge_loss, l1_loss, smooth_l1_loss # possible loss functions
 from modules.vnca import VNCA
 from train import train
 import torch
 
-selected_dataset = "bloodmnist"
+selected_dataset = "pathmnist"
 pic_channels = 3
 n_updates_s = 50_000
 eval_interval_s = 1000
 num_test = 40 # use 
+# Choose the loss function from the possible loss functions above
+loss_fn_t = mse_loss # modified for different losses, originally elbo
+loss_fn_e = iwae # modified for different losses, originally iwae
+notification = "test_1_train_loss_mse_loss_eval_loss_iwae" # put by the end of the pth file name
+# test resuts train use mse_loss and eval use iwae
+# 
 
 if __name__ == "__main__":
     z_size = 256
@@ -101,7 +108,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     vnca = VNCA(h, w, n_channels, z_size, encoder, update_net, train_loader.dataset, val_loader.dataset, 
-                test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps)
+                test_loader.dataset, state_to_dist, batch_size, dmg_size, p_update, min_steps, max_steps, loss_fn_t, loss_fn_e)  # modified for different losses
 
     results_dir = os.path.join(grandparent_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
@@ -159,7 +166,7 @@ if __name__ == "__main__":
         print(f"Error during training: {e}")
         sys.exit(1)
 
-    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}.pth')
+    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}_{notification}.pth')
 
     try:
         torch.save(vnca.state_dict(), save_path)
