@@ -34,7 +34,7 @@ loss_sel = "elbo_train_iwae_eval" # put by the end of the pth file name
 # when use kl_divergence_loss will after 10 epochs already have non-finite gradient problem
 
 # Choose the filter size
-filter_size_t = 4  # modified for different filters sizes, originally 5
+filter_size_t = 3  # modified for different filters sizes, originally 5
 # test resuts for training with different filter sizes
 
 # chosse learning rate
@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
     filter_size = filter_size_t
     pad = filter_size // 2
+    print(f"Pad size: {pad}") 
     encoder_hid = 32
     h = w = 32
     n_channels = pic_channels
@@ -68,6 +69,12 @@ if __name__ == "__main__":
         nn.Flatten(),
         nn.Linear(encoder_hid * (2 ** 4) * h // 16 * w // 16, 2 * z_size),
     )
+
+    # Iterate through the layers and print the parameters
+    for name, layer in encoder.named_children():
+        print(f"Layer: {name}")
+        for param in layer.parameters():
+            print(param.shape)
 
     update_net = nn.Sequential(
         nn.Conv2d(z_size, nca_hid, 3, padding=1),
