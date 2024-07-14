@@ -18,11 +18,11 @@ from train import train
 import torch
 
 weight_to_test = "best_dermamnist"
-selected_dataset = "retinamnist" #"dermamnist" # choose from "pathmnist", "dermamnist", "retinamnist", "bloodmnist", "breastmnist
+selected_dataset = "dermamnist" #"dermamnist" # choose from "pathmnist", "dermamnist", "retinamnist", "bloodmnist", "breastmnist
 pic_channels = 3
 n_updates_s = 1#50_000
 eval_interval_s = 1000
-num_test = 60 # use 
+num_test = 10 # use 
 
 # Experiment settings and results
 # Choose the loss function from the possible loss functions above
