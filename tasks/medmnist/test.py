@@ -17,6 +17,7 @@ from modules.vnca import VNCA
 from train import train
 import torch
 
+weight_to_test = "best_dermamnist"
 selected_dataset = "retinamnist" #"dermamnist" # choose from "pathmnist", "dermamnist", "retinamnist", "bloodmnist", "breastmnist
 pic_channels = 3
 n_updates_s = 1#50_000
@@ -34,7 +35,7 @@ loss_sel = "elbo_train_iwae_eval" # put by the end of the pth file name
 # when use kl_divergence_loss will after 10 epochs already have non-finite gradient problem
 
 # Choose the filter size
-filter_size_t = 5  # modified for different filters sizes, originally 5
+filter_size_t = 3  # modified for different filters sizes, originally 5
 # test resuts for training with different filter sizes
 
 # chosse learning rate
@@ -139,69 +140,9 @@ if __name__ == "__main__":
     # load the latest model weights
     max_update = -1
     load_path = None
-    
-    '''
-    # compare the update number of the three files
-    if os.path.exists(latest_path):
-        latest_update = vnca.load(latest_path)
-        if latest_update > max_update:
-            max_update = latest_update
-            load_path = latest_path
-
-    if os.path.exists(checkpoint_path):
-        checkpoint_update = vnca.load(checkpoint_path)
-        if checkpoint_update > max_update:
-            max_update = checkpoint_update
-            load_path = checkpoint_path
-
-    if os.path.exists(best_path):
-        best_update = vnca.load(best_path)
-        if best_update > max_update:
-            max_update = best_update
-            load_path = best_path
-    '''
             
-    load_path = os.path.join(results_dir, f"best_retinamnist.pth")
+    load_path = os.path.join(results_dir, f"{weight_to_test}.pth")
     vnca.load(load_path)
-    
-    '''
-    # only load the latest model weights
-    if max_update == -1:
-        print("\n*******************************\nNo checkpoint found, starting from scratch.\n*******************************\n")
-        load_path = checkpoint_path  # default path for saving the model weights
-    else:
-        print(
-        f"\n*******************************\n"
-        f"Loading checkpoint from {os.path.relpath(load_path)} with {max_update} updates. "
-        f"\nRemaining updates: {n_updates_s - max_update}.\n"
-        f"*******************************\n"
-    )
-        vnca.load(load_path)
-    '''
-    
-    '''
-    try:
-        vnca.eval_batch()
-    except Exception as e:
-        print(f"\n*******************************\nError during initial evaluation: {e}\n*******************************\n")
-
-    n_updates = n_updates_s
-    eval_interval = eval_interval_s
-    try:
-        train(vnca, selected_dataset, n_updates, eval_interval, checkpoint_path=load_path, save_dir=results_dir)
-    except Exception as e:
-        print(f"Error during training: {e}")
-        sys.exit(1)
-
-    save_path = os.path.join(results_dir, f'vnca_model_{selected_dataset}_{n_updates}_{eval_interval}_{loss_sel}_filter_size_{filter_size_t}_lr_{lr_s}.pth')
-
-    try:
-        torch.save(vnca.state_dict(), save_path)
-        print(f"Model weights saved to {os.path.relpath(save_path)}")
-    except Exception as e:
-        print(f"Error saving model weights: {e}")
-        sys.exit(1)
-    '''
 
     try:
         vnca.test(num_test)
