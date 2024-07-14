@@ -1,5 +1,6 @@
 import torch as t
 from torch.distributions import Distribution, kl_divergence
+import torch.nn.functional as F
 
 
 def iwae(x: t.Tensor, p_x_given_z: Distribution, q_z_given_x: Distribution, p_z: Distribution, z: t.Tensor):
@@ -53,3 +54,45 @@ def elbo(x: t.Tensor, p_x_given_z: Distribution, q_z_given_x: Distribution, p_z:
 
     loss = reconstruction_loss + kl_loss
     return loss, reconstruction_loss, kl_loss
+
+def mse_loss(x, p_x_given_z, q_z_given_x, p_z, z):
+    x_recon = p_x_given_z.mean
+    recon_loss = F.mse_loss(x_recon, x, reduction='none').mean(dim=[1, 2, 3])
+    kl_loss = kl_divergence(q_z_given_x, p_z).sum(dim=1)
+    loss = recon_loss + kl_loss
+    return loss, recon_loss, kl_loss
+
+def bce_loss(x, p_x_given_z, q_z_given_x, p_z, z):
+    x_recon = p_x_given_z.mean
+    recon_loss = F.binary_cross_entropy_with_logits(x_recon, x, reduction='none').mean(dim=[1, 2, 3])
+    kl_loss = kl_divergence(q_z_given_x, p_z).sum(dim=1)
+    loss = recon_loss + kl_loss
+    return loss, recon_loss, kl_loss
+
+def kl_divergence_loss(x, p_x_given_z, q_z_given_x, p_z, z):
+    x_recon = p_x_given_z.mean
+    recon_loss = F.mse_loss(x_recon, x, reduction='none').mean(dim=[1, 2, 3])
+    kl_loss = kl_divergence(q_z_given_x, p_z).sum(dim=1)
+    loss = recon_loss + kl_loss
+    return loss, recon_loss, kl_loss
+
+def hinge_loss(x, p_x_given_z, q_z_given_x, p_z, z):
+    x_recon = p_x_given_z.mean
+    recon_loss = t.clamp(1 - x * x_recon, min=0).mean(dim=[1, 2, 3])
+    kl_loss = kl_divergence(q_z_given_x, p_z).sum(dim=1)
+    loss = recon_loss + kl_loss
+    return loss, recon_loss, kl_loss
+
+def l1_loss(x, p_x_given_z, q_z_given_x, p_z, z):
+    x_recon = p_x_given_z.mean
+    recon_loss = F.l1_loss(x_recon, x, reduction='none').mean(dim=[1, 2, 3])
+    kl_loss = kl_divergence(q_z_given_x, p_z).sum(dim=1)
+    loss = recon_loss + kl_loss
+    return loss, recon_loss, kl_loss
+
+def smooth_l1_loss(x, p_x_given_z, q_z_given_x, p_z, z):
+    x_recon = p_x_given_z.mean
+    recon_loss = F.smooth_l1_loss(x_recon, x, reduction='none').mean(dim=[1, 2, 3])
+    kl_loss = kl_divergence(q_z_given_x, p_z).sum(dim=1)
+    loss = recon_loss + kl_loss
+    return loss, recon_loss, kl_loss

@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 
 from modules.iterable_dataset_wrapper import IterableWrapper
-from modules.loss import elbo, iwae
+from modules.loss import elbo, iwae # losses used for test as iwae
 from modules.model import Model
 from modules.nca import NCA
 from util import get_writers
@@ -42,8 +42,12 @@ class VNCA(Model):
                  dmg_size: int,
                  p_update: float,
                  min_steps: int,
-                 max_steps: int
+                 max_steps: int,
+                 loss_fn_t,
+                 loss_fn_e,
+                 lr_s  # modified for different losses
                  ):
+
         super(Model, self).__init__()
         self.best_loss = float('inf')  
         self.h = h
@@ -66,7 +70,10 @@ class VNCA(Model):
         self.train_loader = iter(DataLoader(IterableWrapper(train_data), batch_size=batch_size, pin_memory=True))
         self.val_loader = iter(DataLoader(IterableWrapper(val_data), batch_size=batch_size, pin_memory=True))
         self.train_writer, self.test_writer = get_writers("vnca")
-
+        # Save the loss function to self
+        self.loss_fn_t = loss_fn_t  # modified for different losses
+        self.loss_fn_e = loss_fn_e  # modified for different losses
+        self.lr_s = lr_s
         #print(self)
         #total = sum(p.numel() for p in self.parameters())
         #for n, p in self.named_parameters():
@@ -74,7 +81,7 @@ class VNCA(Model):
         #print("Total: %d" % total)
 
         self.to(self.device)
-        self.optimizer = optim.Adam(self.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(self.parameters(), lr=lr_s)
         self.batch_idx = 0
 
     def train_batch(self):
@@ -82,7 +89,7 @@ class VNCA(Model):
 
         self.optimizer.zero_grad()
         x, y = next(self.train_loader)
-        loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, elbo)
+        loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, self.loss_fn_t)  # modified for different losses
         loss.mean().backward()
 
         t.nn.utils.clip_grad_norm_(self.parameters(), 1.0, error_if_nonfinite=True)
@@ -99,7 +106,7 @@ class VNCA(Model):
         self.train(False)
         with t.no_grad():
             x, y = next(self.val_loader)
-            loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, iwae)
+            loss, z, p_x_given_z, recon_loss, kl_loss, states = self.forward(x, 1, self.loss_fn_e)  # modified for different losses
             self.report(self.test_writer, states, loss, recon_loss, kl_loss)
         return loss.mean().item()
 
@@ -208,10 +215,10 @@ class VNCA(Model):
             states = self.decode(samples)
             samples, samples_means = self.to_rgb(states[-1])
             #modify
-            #if samples.shape[1] == 1:  # 如果是单通道图像
-            #    samples = samples.expand(-1, 3, -1, -1)  # 将其转换为三通道图像
+            #if samples.shape[1] == 1: 
+            #    samples = samples.expand(-1, 3, -1, -1) 
             #if samples_means.shape[1] == 1:
-            #    samples_means = samples_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+            #    samples_means = samples_means.expand(-1, 3, -1, -1)  
 
             writer.add_images("samples/samples", samples, self.batch_idx)
             writer.add_images("samples/means", samples_means, self.batch_idx)
@@ -227,10 +234,10 @@ class VNCA(Model):
                 growth_samples = t.cat(growth_samples, dim=0).cpu().detach().numpy()  # (n_states, 3, h, w)
                 growth_means = t.cat(growth_means, dim=0).cpu().detach().numpy()  # (n_states, 3, h, w)
                 #modify
-                #if growth_samples.shape[1] == 1:  # 如果是单通道图像
-                #    growth_samples = np.repeat(growth_samples, 3, axis=1)  # 将其转换为三通道图像
+                #if growth_samples.shape[1] == 1: 
+                #    growth_samples = np.repeat(growth_samples, 3, axis=1) 
                 #if growth_means.shape[1] == 1:
-                #    growth_means = np.repeat(growth_means, 3, axis=1)  # 同样转换样本均值
+                #    growth_means = np.repeat(growth_means, 3, axis=1)  
 
                 writer.add_images(tag + "/samples", growth_samples, self.batch_idx)
                 writer.add_images(tag + "/means", growth_means, self.batch_idx)
@@ -241,22 +248,22 @@ class VNCA(Model):
             state = states[-1]
             _, original_means = self.to_rgb(state)
             #modify
-            #if original_means.shape[1] == 1:  # 如果是单通道图像
-            #    original_means = original_means.expand(-1, 3, -1, -1)  # 将其转换为三通道图像
+            #if original_means.shape[1] == 1: 
+            #    original_means = original_means.expand(-1, 3, -1, -1) 
 
             writer.add_images("dmg/1-pre", original_means, self.batch_idx)
             dmg = self.damage(state)
             _, dmg_means = self.to_rgb(dmg)
             #modify
-            #if dmg_means.shape[1] == 1:  # 如果是单通道图像
-            #    dmg_means = dmg_means.expand(-1, 3, -1, -1) # 同样转换样本均值
+            #if dmg_means.shape[1] == 1: 
+            #    dmg_means = dmg_means.expand(-1, 3, -1, -1) 
 
             writer.add_images("dmg/2-dmg", dmg_means, self.batch_idx)
             recovered = self.nca(dmg)
             _, recovered_means = self.to_rgb(recovered[-1])
             #modify
             #if recovered_means.shape[1] == 1:
-            #    recovered_means = recovered_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+            #    recovered_means = recovered_means.expand(-1, 3, -1, -1)  
 
             writer.add_images("dmg/3-post", recovered_means, self.batch_idx)
 
@@ -266,9 +273,9 @@ class VNCA(Model):
             recons_samples, recons_means = self.to_rgb(recon_states[-1].detach())
             #modify
             #if recons_samples.shape[1] == 1:
-            #    recons_samples = recons_samples.expand(-1, 3, -1, -1)  # 同样转换样本
+            #    recons_samples = recons_samples.expand(-1, 3, -1, -1) 
             #if recons_means.shape[1] == 1:
-            #    recons_means = recons_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+            #    recons_means = recons_means.expand(-1, 3, -1, -1)  
 
             writer.add_images("recons/samples", recons_samples, self.batch_idx)
             writer.add_images("recons/means", recons_means, self.batch_idx)
@@ -280,9 +287,9 @@ class VNCA(Model):
                 pool_samples, pool_means = self.to_rgb(pool_states)
                 #modify
                 #if pool_samples.shape[1] == 1:
-                #    pool_samples = pool_samples.expand(-1, 3, -1, -1)  # 同样转换样本
+                #    pool_samples = pool_samples.expand(-1, 3, -1, -1) 
                 #if pool_means.shape[1] == 1:
-                #    pool_means = pool_means.expand(-1, 3, -1, -1)  # 同样转换样本均值
+                #    pool_means = pool_means.expand(-1, 3, -1, -1)  
                 writer.add_images("pool/samples", pool_samples, self.batch_idx)
                 writer.add_images("pool/means", pool_means, self.batch_idx)
 
