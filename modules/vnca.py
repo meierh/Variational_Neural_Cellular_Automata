@@ -129,7 +129,7 @@ class VNCA(Model):
         return Normal(loc=loc, scale=t.exp(logsigma))
 
     def decode(self, z: t.Tensor) -> Tuple[Distribution, Sequence[t.Tensor]]:  # p(x|z)
-        z.sg("bzhw")
+        # z.sg("bzhw")
         return self.nca(z)
 
     def damage(self, states):

@@ -1,9 +1,6 @@
 import torch
-from torchvision.utils import save_image
+from torchvision.utils import save_image, make_grid
 from torch import nn
-from torch.nn.functional import interpolate
-import cv2
-import numpy as np
 
 from modules.residual import Residual
 from modules.vnca import VNCA
@@ -17,14 +14,13 @@ dmg_size = 16
 filter_size = 5
 pad = filter_size // 2
 encoder_hid = 32
+h = w = 32
 n_channels = 3  # Obtained from main.py as pic_channels
-
 
 # Define the state_to_dist function
 def state_to_dist(state):
     n_mixtures = 1
     return DiscretizedMixtureLogitsDistribution(n_mixtures, state[:, :n_mixtures * 10, :, :])
-
 
 # Define encoder and update_net
 encoder = nn.Sequential(
@@ -34,7 +30,7 @@ encoder = nn.Sequential(
     nn.Conv2d(encoder_hid * 2 ** 2, encoder_hid * 2 ** 3, filter_size, padding=pad, stride=2), nn.ELU(),
     nn.Conv2d(encoder_hid * 2 ** 3, encoder_hid * 2 ** 4, filter_size, padding=pad, stride=2), nn.ELU(),
     nn.Flatten(),
-    nn.Linear(encoder_hid * (2 ** 4) * 2 * 2, 2 * z_size),
+    nn.Linear(encoder_hid * (2 ** 4) * h // 16 * w // 16, 2 * z_size),
 )
 
 update_net = nn.Sequential(
@@ -66,8 +62,8 @@ update_net[-1].bias.data.fill_(0.0)
 
 # Initialize the VNCA model
 model = VNCA(
-    h=2,
-    w=2,
+    h=h,
+    w=w,
     n_channels=n_channels,
     z_size=z_size,
     encoder=encoder,
@@ -84,72 +80,30 @@ model = VNCA(
 )
 
 input_name = '../weights/path_50k.pth'
-output_name_base = '../images/path/' + input_name.split('.')[-2].split('/')[-1] + '_image'
+output_name = '../images/'+input_name.split('.')[-2].split('/')[-1]+'_image.png'
 
 # Load the trained model weights
 state_dict = torch.load(input_name, map_location=torch.device('cpu'))
 
 # Get the model state dictionary
-# model_state_dict = state_dict['model_state_dict']  # For derma and retina mnist dataset
+# model_state_dict = state_dict['model_state_dict'] # For derma and retina mnist dataset
 model_state_dict = state_dict # For blood and path mnist dataset
 
 # Directly load model_state_dict
 model.load_state_dict(model_state_dict)
 model.eval()
 
-# Create a 2x2 initial noise
-initial_size = 2
-initial_state = torch.randn(1, z_size, initial_size, initial_size)
-
-# Print initial state for debugging
-print("Initial state shape:", initial_state.shape)
-
-# Iteration process for evolving the image and doubling the size
-num_iterations = 5  # Number of doubling steps
-steps_per_iteration = 8  # Number of NCA steps per doubling
-state = initial_state
-
-
-# Function for denoising the image using averaging
-def denoise_image(image):
-    # Convert the image to a numpy array
-    image_np = image.squeeze().cpu().numpy().transpose(1, 2, 0)
-
-    # Apply averaging filter
-    denoised_image_np = cv2.blur(image_np, (5, 5))
-
-    # Convert back to a tensor
-    denoised_image = torch.tensor(denoised_image_np).permute(2, 0, 1)
-
-    return denoised_image
-
+# Generate 64 images with different initial noise
+num_images = 4
+initial_noise = torch.randn(num_images, z_size, 1, 1)  # 64 different noise with latent variable size
 
 # Generate images using the model
 with torch.no_grad():
-    for i in range(num_iterations):
-        print(f"Iteration {i + 1}: current state shape: {state.shape}")
+    seeds = initial_noise.expand(-1, -1, h, w)
+    states = model.decode(seeds)
+    generated_images, _ = model.to_rgb(states[-1])
+# Create an 8x8 grid of images
+grid_image = make_grid(generated_images, nrow=2)
 
-        # Ensure the shape is correct for the current model
-        state_shape = state.shape[2:]
-        model.h, model.w = state_shape
-
-        for step in range(steps_per_iteration):
-            state = state.contiguous()  # Ensure the state is contiguous
-            states = model.decode(state)  # Ensure the states are a list of 4D tensors
-            state = states[-1]  # Use the last state for the next iteration
-
-            # Generate and save the image
-            generated_images, _ = model.to_rgb(state)
-            denoised_image = denoise_image(generated_images)
-            output_name = f'{output_name_base}_iteration_{i + 1}_step_{step + 1}.png'
-            save_image(denoised_image, output_name)
-            print(f'Saved image at iteration {i + 1}, step {step + 1}')
-
-        # Double the size of the state
-        state = interpolate(state, scale_factor=2, mode='nearest')
-        print(f"Doubled state shape: {state.shape}")
-
-# Save the final generated image
-final_output_name = f'{output_name_base}_final.png'
-save_image(denoise_image(generated_images), final_output_name)
-print(f'Saved final image at iteration {num_iterations}')
+# Save the generated grid image
+save_image(grid_image, output_name)
